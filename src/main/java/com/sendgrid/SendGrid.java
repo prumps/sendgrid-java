@@ -3,13 +3,9 @@ package com.sendgrid;
 import org.json.JSONObject;
 import com.sendgrid.smtpapi.SMTPAPI;
 
-import java.util.ArrayList;
+import java.util.*;
 import java.io.ByteArrayInputStream;
 import java.io.FileNotFoundException;
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
 import java.io.FileInputStream;
 
 import java.io.File;
@@ -103,10 +99,10 @@ public class SendGrid {
       builder.addTextBody(String.format(PARAM_BCC, i), bccs[i], ContentType.create("text/plain", "UTF-8"));
     // Files
     if (email.getAttachments().size() > 0) {
-      Iterator it = email.getAttachments().entrySet().iterator();
+      Iterator it = email.getAttachments().iterator();
       while (it.hasNext()) {
-        Map.Entry entry = (Map.Entry) it.next();
-        builder.addBinaryBody(String.format(PARAM_FILES, entry.getKey()), (InputStream) entry.getValue());
+        Attachment attachment = (Attachment)it.next();
+        builder.addBinaryBody(String.format(PARAM_FILES, attachment.filename), attachment.inputStream);
       }
     }
 
@@ -157,6 +153,14 @@ public class SendGrid {
 
   }
 
+  public static class Attachment {
+      public Attachment(String f, InputStream s) {
+          filename = f; inputStream = s;
+      }
+      public String filename;
+      public InputStream inputStream;
+  }
+
   public static class Email {
     private SMTPAPI smtpapi;
     private ArrayList<String> to;
@@ -169,7 +173,7 @@ public class SendGrid {
     private String text;
     private String html;
     private ArrayList<String> bcc;
-    private Map<String, InputStream> attachments;
+    private List<Attachment> attachments;
     private Map<String, String> contents;
     private Map<String, String> headers;
 
@@ -179,7 +183,7 @@ public class SendGrid {
       this.toname = new ArrayList<String>();
       this.cc = new ArrayList<String>();
       this.bcc = new ArrayList<String>();
-      this.attachments = new HashMap<String, InputStream>();
+      this.attachments = new ArrayList<Attachment>();
       this.contents = new HashMap<String, String>();
    	  this.headers = new HashMap<String, String>();
    	}
@@ -401,11 +405,11 @@ public class SendGrid {
     }
 
     public Email addAttachment(String name, InputStream file) throws IOException {
-      this.attachments.put(name, file);
+      this.attachments.add(new Attachment(name, file));
       return this;
     }
 
-    public Map getAttachments() {
+    public List<Attachment> getAttachments() {
       return this.attachments;
     }
 
